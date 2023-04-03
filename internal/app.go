@@ -38,7 +38,9 @@ func NewApp(
 	app.Use(recover.New())
 
 	if !appConfig.IsProduction() {
+		httpRouter.SwaggerRoute(app, "localhost:8888/docs")
 		log.SetLevel(log.DebugLevel)
+		log.SetLevel(log.InfoLevel)
 	} else {
 		log.SetLevel(log.ErrorLevel)
 	}
@@ -46,6 +48,7 @@ func NewApp(
 	httpRouter.SetupRoutes(app)
 
 	log.Info(fmt.Sprintf("Application is running on %v port...", appConfig.Port))
+	log.Info(fmt.Sprintf("Swagger served at %v", "http://localhost:8888/swagger"))
 
 	return app
 }
