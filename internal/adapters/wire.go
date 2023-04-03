@@ -5,5 +5,6 @@ import (
 )
 
 var AdaptersSet = wire.NewSet(
-	NewSMSAdapter,
+	NewS3Adapter,
+	wire.Bind(new(IS3Adapter), new(*S3Adapter)),
 )
