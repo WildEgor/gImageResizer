@@ -3,18 +3,31 @@ package routers
 import (
 	"fmt"
 
+	handlers "github.com/WildEgor/gImageResizer/internal/handlers/http"
 	"github.com/gofiber/fiber/v2"
 	swagger "github.com/gofiber/swagger"
 )
 
 type HTTPRouter struct {
+	saveFilesHandler *handlers.SaveFilesHandler
 }
 
-func NewHTTPRouter() *HTTPRouter {
-	return &HTTPRouter{}
+func NewHTTPRouter(
+	saveFilesHandler *handlers.SaveFilesHandler,
+) *HTTPRouter {
+	return &HTTPRouter{
+		saveFilesHandler: saveFilesHandler,
+	}
 }
 
 func (r *HTTPRouter) SetupRoutes(app *fiber.App) error {
+
+	v1 := app.Group("/api/v1")
+
+	upload := v1.Group("/upload")
+
+	upload.Post("/", r.saveFilesHandler.Handle)
+
 	return nil
 }
 

@@ -7,7 +7,9 @@
 package app
 
 import (
+	"github.com/WildEgor/gImageResizer/internal/adapters"
 	"github.com/WildEgor/gImageResizer/internal/configs"
+	"github.com/WildEgor/gImageResizer/internal/handlers/http"
 	"github.com/WildEgor/gImageResizer/internal/routers"
 	"github.com/gofiber/fiber/v2"
 	"github.com/google/wire"
@@ -17,7 +19,10 @@ import (
 
 func NewServer() (*fiber.App, error) {
 	appConfig := configs.NewAppConfig()
-	httpRouter := routers.NewHTTPRouter()
+	s3Config := configs.NewS3Config()
+	s3Adapter := adapters.NewS3Adapter(s3Config)
+	saveFilesHandler := handlers.NewSaveFilesHandler(s3Adapter)
+	httpRouter := routers.NewHTTPRouter(saveFilesHandler)
 	app := NewApp(appConfig, httpRouter)
 	return app, nil
 }

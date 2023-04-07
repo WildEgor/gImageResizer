@@ -8,7 +8,7 @@ import (
 
 type S3Config struct {
 	Region    string `env:"S3_REGION"`
-	Bucket    string `env:"S3_DEFAUL_BUCKET"`
+	Bucket    string `env:"S3_BUCKET"`
 	Endpoint  string `env:"S3_ENDPOINT"`
 	AccessKey string `env:"S3_AKEY"`
 	SecretKey string `env:"S3_SKEY"`
