@@ -1,13 +1,15 @@
 package handlers
 
 import (
-	"context"
 	"io/ioutil"
 	"mime/multipart"
-	"sync"
+	"net/http"
+
+	log "github.com/sirupsen/logrus"
 
 	"github.com/WildEgor/gImageResizer/internal/adapters"
 	"github.com/gofiber/fiber/v2"
+	uuid "github.com/google/uuid"
 )
 
 type PutObjResult struct {
@@ -38,7 +40,6 @@ func NewSaveFilesHandler(
 //	@Param			files	file
 //	@Router			/api/v1/upload [post]
 func (h *SaveFilesHandler) Handle(ctx *fiber.Ctx) error {
-
 	form, err := ctx.MultipartForm()
 	if err != nil {
 		ctx.Status(fiber.StatusBadRequest).JSON(fiber.Map{
@@ -59,74 +60,64 @@ func (h *SaveFilesHandler) Handle(ctx *fiber.Ctx) error {
 		})
 	}
 
-	var wg sync.WaitGroup
-	wg.Add(len(files))
-	readCh := make(chan []*PutObjResult, len(files))
+	successPaths := make([]string, len(files))
+	pathNumber := 0
+	for _, formFile := range files {
 
-	for _, file := range files[1:] {
-		go func(ctx context.Context, file *multipart.FileHeader, resp chan []*PutObjResult) {
-			defer func() {
-				wg.Done()
-			}()
-
-			s := []*PutObjResult{}
-			result := &PutObjResult{}
-
-			buffer, err := file.Open()
-			if err != nil {
-				result.Error = &err
-				result.Status = false
-			}
-			defer buffer.Close()
-
-			buf, err := ioutil.ReadAll(buffer)
-			if err != nil {
-				result.Error = &err
-				result.Status = false
-			}
-
-			err = h.s3Adapter.PutObj(ctx, &adapters.S3Obj{
-				Key:         file.Filename,
-				Size:        file.Size,
-				ContentType: file.Header["Content-Type"][0],
-				Bytes:       buf,
+		binaryFile, err := h.readFile(formFile)
+		if err != nil {
+			ctx.Status(fiber.StatusBadRequest).JSON(fiber.Map{
+				"isOk": false,
+				"data": fiber.Map{
+					"message": "ERR_READ_FILE",
+				},
 			})
-			if err != nil {
-				result.Error = &err
-				result.Status = false
-			}
-
-			s = append(s, result)
-
-			readCh <- s
-		}(ctx.Context(), file, readCh)
-	}
-	wg.Wait()
-
-	putResults := <-readCh
-	putResult := &PutObjResult{}
-
-	for _, r := range putResults {
-		if r.Status != true {
-			putResult.Error = r.Error
-			putResult.Status = r.Status
-			putResult.FileName = r.FileName
+			break
 		}
-	}
 
-	if putResult.Status != true {
-		ctx.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
-			"isOk": false,
-			"data": fiber.Map{
-				"message": "ERR_UPLOAD_FILE",
-			},
+		key := uuid.New().String() + "-" + formFile.Filename
+		contentType := http.DetectContentType(binaryFile)
+
+		result, uerr := h.s3Adapter.SessionUpload(ctx.Context(), &adapters.S3Obj{
+			Key:           key,
+			Bytes:         binaryFile,
+			ContentType:   contentType,
+			ContentLength: int64(len(binaryFile)),
 		})
+		if uerr != nil {
+			log.Error(uerr)
+			continue
+		}
+
+		successPaths[pathNumber] = *result
+		pathNumber++
 	}
 
-	ctx.Status(fiber.StatusBadRequest).JSON(fiber.Map{
+	ctx.Status(fiber.StatusOK).JSON(fiber.Map{
 		"isOk": true,
-		"data": putResult,
+		"data": fiber.Map{
+			"message": "SUCCESS",
+			"paths":   successPaths,
+		},
 	})
 
 	return nil
+}
+
+func (h *SaveFilesHandler) readFile(file *multipart.FileHeader) ([]byte, error) {
+	openedFile, _ := file.Open()
+
+	binaryFile, err := ioutil.ReadAll(openedFile)
+	if err != nil {
+		return nil, err
+	}
+
+	defer func(openedFile multipart.File) {
+		err := openedFile.Close()
+		if err != nil {
+			log.Fatalf("Failed closing file %v", file.Filename)
+		}
+	}(openedFile)
+
+	return binaryFile, nil
 }

@@ -26,7 +26,8 @@ func NewApp(
 	httpRouter *routers.HTTPRouter,
 ) *fiber.App {
 	app := fiber.New(fiber.Config{
-		ErrorHandler: handlers_http.ErrorHandler,
+		EnablePrintRoutes: true,
+		ErrorHandler:      handlers_http.ErrorHandler,
 	})
 
 	app.Use(cors.New(cors.Config{

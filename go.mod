@@ -3,15 +3,23 @@ module github.com/WildEgor/gImageResizer
 go 1.20
 
 require (
+	github.com/aws/aws-sdk-go v1.44.239
 	github.com/caarlos0/env/v7 v7.1.0
 	github.com/gofiber/fiber/v2 v2.43.0
 	github.com/gofiber/swagger v0.1.10
 	github.com/google/wire v0.5.0
 	github.com/joho/godotenv v1.5.1
+	github.com/minio/minio-go v6.0.14+incompatible
 	github.com/sirupsen/logrus v1.9.0
 )
 
-require github.com/swaggo/files/v2 v2.0.0 // indirect
+require (
+	github.com/aws/smithy-go v1.13.5 // indirect
+	github.com/go-ini/ini v1.67.0 // indirect
+	github.com/jmespath/go-jmespath v0.4.0 // indirect
+	github.com/mitchellh/go-homedir v1.1.0 // indirect
+	github.com/swaggo/files/v2 v2.0.0 // indirect
+)
 
 require (
 	github.com/KyleBanks/depth v1.2.1 // indirect
