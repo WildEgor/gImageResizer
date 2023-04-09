@@ -21,7 +21,7 @@ func NewServer() (*fiber.App, error) {
 	appConfig := configs.NewAppConfig()
 	s3Config := configs.NewS3Config()
 	s3Adapter := adapters.NewS3Adapter(s3Config)
-	saveFilesHandler := handlers.NewSaveFilesHandler(s3Adapter)
+	saveFilesHandler := handlers.NewSaveFilesHandler(appConfig, s3Adapter)
 	httpRouter := routers.NewHTTPRouter(saveFilesHandler)
 	app := NewApp(appConfig, httpRouter)
 	return app, nil

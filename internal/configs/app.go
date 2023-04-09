@@ -7,6 +7,7 @@ import (
 )
 
 type AppConfig struct {
+	BaseURL string `env:"APP_BASE_URL"`
 	Port    string `env:"APP_PORT"`
 	Mode    string `env:"APP_MODE"`
 	GoEnv   string `env:"GO_ENV"`
