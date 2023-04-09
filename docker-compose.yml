@@ -1,0 +1,97 @@
+version: "3.7"
+
+# networks:
+#   app-network:
+
+services:
+  nginx:
+    restart: unless-stopped
+    build: ./nginx
+    container_name: imgproxy_gateway
+    # networks:
+    #   - app-network
+    security_opt:
+      - no-new-privileges:true
+    volumes:
+      - ./www:/home:cached
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf
+      - ./nginx/imgproxy.conf:/etc/nginx/nginx.d/imgproxy.conf
+    ports:
+      - 8080:80
+      - 8443:443/tcp
+      - 8443:443/udp
+    links:
+      - imgproxy:imgproxy
+      - resizer:resizer
+    environment:
+      NGINX_ENTRYPOINT_QUIET_LOGS: 1
+
+  imgproxy:
+    restart: unless-stopped
+    image: darthsim/imgproxy:latest
+    container_name: imgproxy_app
+    # networks:
+    #   - app-network
+    security_opt:
+      - no-new-privileges:true
+    volumes:
+      - ./www:/home:cached
+    expose:
+      - "50200:8080"
+    # healthcheck:
+    #   test: ["CMD", "imgproxy", "health"]
+    environment:
+      IMGPROXY_USE_S3: true
+      IMGPROXY_S3_REGION: ${S3_REGION}
+      AWS_ACCESS_KEY_ID: ${S3_AKEY}
+      AWS_SECRET_ACCESS_KEY: ${S3_SKEY}
+      ### See:
+      ### https://docs.imgproxy.net/configuration
+      ### log and debug
+      IMGPROXY_LOG_LEVEL: "warn"
+      IMGPROXY_ENABLE_DEBUG_HEADERS: "false"
+      IMGPROXY_DEVELOPMENT_ERRORS_MODE: "false"
+      IMGPROXY_REPORT_DOWNLOADING_ERRORS: "false"
+      ### timeouts
+      IMGPROXY_READ_TIMEOUT: 10
+      IMGPROXY_WRITE_TIMEOUT: 10
+      IMGPROXY_DOWNLOAD_TIMEOUT: 10
+      IMGPROXY_KEEP_ALIVE_TIMEOUT: 300
+      IMGPROXY_MAX_SRC_FILE_SIZE: 20971520 # 20MB
+      ### image source
+      IMGPROXY_TTL: 2592000 # client-side cache time is 30 days
+      IMGPROXY_USE_ETAG: "false"
+      IMGPROXY_SO_REUSEPORT: "true"
+      IMGPROXY_IGNORE_SSL_VERIFICATION: "true"
+      IMGPROXY_LOCAL_FILESYSTEM_ROOT: /home
+      IMGPROXY_SKIP_PROCESSING_FORMATS: "svg,webp,avif"
+      ### presets
+      IMGPROXY_AUTO_ROTATE: "true"
+      # IMGPROXY_WATERMARK_PATH: /home/watermark.jpg
+      # IMGPROXY_PRESETS: default=resizing_type:fit/gravity:sm,logo=watermark:0.5:soea:10:10:0.15,center_logo=watermark:0.3:ce:0:0:0.3
+      ### compression
+      IMGPROXY_STRIP_METADATA: "true"
+      IMGPROXY_STRIP_COLOR_PROFILE: "true"
+      IMGPROXY_FORMAT_QUALITY: jpeg=80,webp=70,avif=50
+      IMGPROXY_JPEG_PROGRESSIVE: "false"
+      IMGPROXY_PNG_INTERLACED: "false"
+      IMGPROXY_PNG_QUANTIZATION_COLORS: 128
+      IMGPROXY_PNG_QUANTIZE: "false"
+      IMGPROXY_MAX_ANIMATION_FRAMES: 64
+      IMGPROXY_GZIP_COMPRESSION: 0
+      IMGPROXY_AVIF_SPEED: 8
+
+  resizer:
+    hostname: resizer
+    restart: unless-stopped
+    # networks:
+    #   - app-network
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: production
+    env_file: .env
+    # volumes:
+    #   - .:/app
+    ports:
+      - "8888:8888"
