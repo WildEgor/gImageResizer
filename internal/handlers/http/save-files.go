@@ -82,11 +82,11 @@ func (h *SaveFilesHandler) Handle(ctx *fiber.Ctx) error {
 				ContentLength: int64(len(binaryFile)),
 			})
 			if uerr == nil {
-				successPaths = append(successPaths, dtos.UploadFilesResponse{
+				successPaths[pathNumber] = dtos.UploadFilesResponse{
 					Name:       filename,
 					Url:        h.appConfig.BaseURL + "/" + key,
 					UploadedAt: time.Now(),
-				})
+				}
 			}
 
 			pathNumber++
