@@ -39,13 +39,14 @@ func NewSaveFilesHandler(
 
 // SaveFiles godoc
 //
-//	@Summary		Upload any valid files
-//	@Description	Upload files
-//	@Tags			upload
-//	@Accept			multipart/form-data
-//	@Produce		json
-//	@Param			files	file
-//	@Router			/api/v1/upload [post]
+//		@Summary		Upload any valid files
+//		@Description	Upload files
+//		@Tags			upload
+//		@Accept			multipart/form-data
+//		@Produce		json
+//	 @Param files formData file true "Files"
+//	 @Param request formData object true "Request Body"
+//		@Router			/api/v1/upload [post]
 func (h *SaveFilesHandler) Handle(ctx *fiber.Ctx) error {
 	form, err := ctx.MultipartForm()
 	if err != nil {

@@ -5,6 +5,7 @@ import (
 	"context"
 	"errors"
 	"io"
+	"time"
 
 	"github.com/WildEgor/gImageResizer/internal/configs"
 	"github.com/aws/aws-sdk-go/aws"
@@ -28,6 +29,7 @@ type S3Obj struct {
 type IS3Adapter interface {
 	PutObj(ctx context.Context, obj *S3Obj) error
 	SessionUpload(ctx context.Context, obj *S3Obj) (*string, error)
+	GetPresign(ctx context.Context, obj *S3Obj) (*string, error)
 }
 
 type S3Adapter struct {
@@ -42,7 +44,8 @@ func NewS3Adapter(
 	creds := credentials.NewStaticCredentials(config.AccessKey, config.SecretKey, "")
 	_, err := creds.Get()
 	if err != nil {
-		log.Fatal("[S3Adapter] Bad config")
+		log.Error(err)
+		log.Fatal("[S3Adapter] Bad creds")
 	}
 
 	cfg := aws.NewConfig().WithRegion(config.Region).WithCredentials(creds)
@@ -84,6 +87,30 @@ func (m *S3Adapter) PutObj(ctx context.Context, obj *S3Obj) error {
 	}
 
 	return nil
+}
+
+func (m *S3Adapter) GetPresign(
+	ctx context.Context,
+	obj *S3Obj,
+) (*string, error) {
+	data := S3Obj(*obj)
+
+	if obj.Bucket == "" {
+		data.Bucket = m.config.Bucket
+	}
+
+	req, _ := m.client.GetObjectRequest(&s3.GetObjectInput{
+		Bucket: &data.Bucket,
+		Key:    &data.Key,
+	})
+
+	link, err := req.Presign(time.Duration(168) * time.Hour)
+
+	if err != nil {
+		return nil, err
+	}
+
+	return &link, nil
 }
 
 func (m *S3Adapter) SessionUpload(

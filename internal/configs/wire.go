@@ -7,4 +7,5 @@ import (
 var ConfigsSet = wire.NewSet(
 	NewAppConfig,
 	NewS3Config,
+	NewImgProxyConfig,
 )

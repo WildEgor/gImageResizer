@@ -9,14 +9,17 @@ import (
 )
 
 type HTTPRouter struct {
-	saveFilesHandler *handlers.SaveFilesHandler
+	saveFilesHandler    *handlers.SaveFilesHandler
+	downloadFileHandler *handlers.DownloadFileHandler
 }
 
 func NewHTTPRouter(
 	saveFilesHandler *handlers.SaveFilesHandler,
+	downloadFileHandler *handlers.DownloadFileHandler,
 ) *HTTPRouter {
 	return &HTTPRouter{
-		saveFilesHandler: saveFilesHandler,
+		saveFilesHandler:    saveFilesHandler,
+		downloadFileHandler: downloadFileHandler,
 	}
 }
 
@@ -27,6 +30,7 @@ func (r *HTTPRouter) SetupRoutes(app *fiber.App) error {
 	upload := v1.Group("/upload")
 
 	upload.Post("/", r.saveFilesHandler.Handle)
+	upload.Get("/:key", r.downloadFileHandler.Handle)
 
 	return nil
 }
